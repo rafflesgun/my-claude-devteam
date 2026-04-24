@@ -56,6 +56,13 @@ journalctl -u <service> -n 200 --no-pager
 ```
 Look for: unhandled exceptions, OOM kills, port conflicts, missing env vars, misconfigured config files.
 
+### .NET service issues
+1. Check Kestrel / ASP.NET Core logs first; preserve request IDs, trace IDs, and exception stack traces.
+2. For IIS-hosted apps, inspect Windows Event Viewer and IIS stdout logs if enabled.
+3. For Azure App Service, inspect App Service logs and Application Insights failures/dependencies/traces.
+4. For structured logging, query Serilog sinks or centralized logs by correlation ID.
+5. When runtime tools are available, use `dotnet-counters`, `dotnet-trace`, or `dotnet-dump` to confirm CPU, allocation, deadlock, or crash hypotheses.
+
 ### API errors
 1. Log the exact request (method, URL, headers, body)
 2. Log the exact response (status, headers, body)

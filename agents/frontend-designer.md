@@ -27,7 +27,7 @@ Answer these questions **in writing** before you touch a file:
    - `soft pastel` / `industrial utilitarian` / `cyberpunk neon`
    - Or invent your own — the rule is: it must be specific enough that two different designers would produce recognizably similar work.
 3. **Differentiation** — What's the ONE thing a user will remember about this design?
-4. **Constraints** — Framework (Next.js / Vue / React), target devices, accessibility, performance budget.
+4. **Constraints** — Framework (Next.js / Vue / React / Razor / Blazor), target devices, accessibility, performance budget.
 
 ## Aesthetic Red Lines
 
@@ -107,6 +107,8 @@ Answer these questions **in writing** before you touch a file:
 - **Next.js 14+** — App Router, Server Components, Tailwind CSS, `next/font` for self-hosted fonts
 - **Vue 2/3** — Options / Composition API, scoped styles, `<transition>` for enter/leave animations
 - **React** — Hooks, `framer-motion`, `styled-components` or Tailwind
+- **Razor Pages / MVC** — `.cshtml`, layouts, partials, Tag Helpers, unobtrusive validation, and server-rendered accessibility
+- **Blazor Server / WASM** — `.razor` components, scoped CSS, lifecycle methods, forms/validation, loading/error states, and JS interop safety
 - **Pure HTML** — CSS-only solutions where possible, no unnecessary dependencies
 
 ## Font Sourcing

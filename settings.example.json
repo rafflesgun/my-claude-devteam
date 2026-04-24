@@ -1,5 +1,5 @@
 {
-  "_comment_top": "Example Claude Code settings wiring all 15 hooks + generic safety rails. Copy to ~/.claude/settings.json and adjust hook paths if you installed the hooks somewhere other than ~/.claude/hooks/.",
+  "_comment_top": "Example Claude Code settings wiring JS/TS hooks, dedicated .NET hooks, and generic safety rails. Copy to ~/.claude/settings.json and adjust hook paths if you installed the hooks somewhere other than ~/.claude/hooks/.",
   "permissions": {
     "defaultMode": "bypassPermissions",
     "_comment": "bypassPermissions = Claude Code will not prompt for each tool call. Use 'prompt' if you prefer to approve each tool call individually. The hooks below provide the safety net when permissions are bypassed."
@@ -33,6 +33,11 @@
             "type": "command",
             "command": "node ~/.claude/hooks/commit-quality.js",
             "description": "Pre-commit: block debugger statements and secrets in staged files"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/dotnet-commit-quality.js",
+            "description": "Pre-commit: block .NET debug breakpoints and secrets in staged files"
           }
         ]
       },
@@ -41,13 +46,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "filepath=$(cat | jq -r '.file_path // .filePath // empty'); if echo \"$filepath\" | grep -qE '\\.(env|pem|key)$|/secrets/|credentials'; then echo \"BLOCKED: Cannot modify sensitive file: $filepath\" >&2; exit 2; fi; exit 0",
-            "description": "Block writes to .env, .pem, .key, credentials files"
+            "command": "filepath=$(cat | jq -r '.tool_input.file_path // .tool_input.filePath // .file_path // .filePath // empty'); if echo \"$filepath\" | grep -qE '\\.(env|pem|key|pfx|p12|snk)$|/secrets/|credentials|secrets\\.json|appsettings\\.(Production|Staging|Prod)\\.json|\\.pubxml(\\.user)?$|\\.csproj\\.user$'; then echo \"BLOCKED: Cannot modify sensitive file: $filepath\" >&2; exit 2; fi; exit 0",
+            "description": "Block writes to secret-bearing env, credential, certificate, publish, and production config files"
           },
           {
             "type": "command",
             "command": "node ~/.claude/hooks/config-protection.js",
             "description": "Block modifications to linter/formatter config files"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/dotnet-config-protection.js",
+            "description": "Block casual modifications to .NET build/analyzer/package config files"
           },
           {
             "type": "command",
@@ -108,6 +118,11 @@
           },
           {
             "type": "command",
+            "command": "node ~/.claude/hooks/dotnet-accumulator.js",
+            "description": "Accumulate edited .NET files for quality checks at Stop"
+          },
+          {
+            "type": "command",
             "command": "node ~/.claude/hooks/design-quality.js",
             "timeout": 10,
             "description": "Warn on generic template-looking frontend UI"
@@ -117,6 +132,12 @@
             "command": "node ~/.claude/hooks/test-runner.js",
             "timeout": 60,
             "description": "Run sibling test files and report failures"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/dotnet-test-runner.js",
+            "timeout": 120,
+            "description": "Run related .NET test projects and report failures"
           }
         ]
       }
@@ -145,8 +166,19 @@
           },
           {
             "type": "command",
+            "command": "node ~/.claude/hooks/dotnet-quality.js",
+            "timeout": 300,
+            "description": "Run .NET format verification and build for edited .NET files"
+          },
+          {
+            "type": "command",
             "command": "node ~/.claude/hooks/check-console.js",
             "description": "Check for stray console.log in modified files"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/dotnet-debug-check.js",
+            "description": "Check for C# debug/log leftovers in modified files"
           },
           {
             "type": "command",

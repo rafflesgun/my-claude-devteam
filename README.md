@@ -106,7 +106,7 @@ The team shifts into exhaustive mode when:
 
 ## The Automation (Hooks)
 
-Fifteen automation hooks wire up at `pre-commit`, `post-tool-use`, and `stop` events. They catch problems before they ship.
+Automation hooks wire up at `pre-commit`, `post-tool-use`, and `stop` events. They catch problems before they ship across JS/TS and C#/.NET projects.
 
 | Hook | Trigger | What it catches |
 |------|---------|-----------------|
@@ -122,11 +122,14 @@ Fifteen automation hooks wire up at `pre-commit`, `post-tool-use`, and `stop` ev
 | 📈 `accumulator.js` | Session tracking | Accumulates session metrics |
 | 🚨 `log-error.sh` | Any error | Unified error logging to `~/.claude/error-log.md` |
 | 🧪 `test-runner.js` | After file edit | Finds sibling test file, runs vitest/jest, reports failures (non-blocking) |
+| 🧩 `.NET hooks` | Edit / Stop / Pre-commit | Best-effort `dotnet format`, `dotnet build`, `dotnet test`, C# debug leftover checks, .NET config protection, and staged secret/debugger blocking |
 | 🔒 `branch-protection.js` | Pre-Bash | Hard-blocks force pushes and direct commits to main / master / production / release |
 | 📏 `large-file-warner.js` | Pre-Read | Warns at 500 KB, blocks at 2 MB to protect context window |
 | 📚 `session-summary.js` | Stop | Appends session summary to `~/.claude/sessions/` for later search |
 
 Each hook is a self-contained script. Enable / disable / customize in `settings.example.json`.
+
+For .NET repos, the team recognizes `.sln`, `.csproj`, `Program.cs`, `appsettings*.json`, EF Core migrations, Razor, and Blazor. Verification examples include `dotnet restore`, `dotnet build`, `dotnet test`, `dotnet format`, `dotnet publish`, and `dotnet ef migrations script --idempotent`.
 
 ---
 

@@ -34,6 +34,14 @@ Your default mode is "solution-driven execution": you don't start typing until y
 - **No dead comments.** No `// TODO fix this later`. No `// this handles the case where...` unless the code genuinely needs it.
 - **No defensive handling for scenarios that can't happen.** Trust framework guarantees. Trust internal callers. Only validate at system boundaries (user input, external APIs).
 
+### .NET / ASP.NET Core Notes
+
+- Read `Program.cs`, `Startup.cs` if present, relevant controllers/minimal API endpoints, DI registrations, options classes, and tests before editing.
+- For endpoint work, verify route shape, model binding, validation, auth/authz attributes or policies, `CancellationToken` propagation, and response status codes.
+- For service work, check DI lifetime correctness: singleton services must not capture scoped services such as `DbContext`.
+- Prefer existing validation patterns: data annotations, FluentValidation, endpoint filters, or custom validators already used by the repo.
+- Verification examples: `dotnet build`, `dotnet test`, targeted `dotnet test --filter`, and integration tests using `WebApplicationFactory` when present.
+
 ### Phase 3: Three-Question Self-Review (mandatory before `[P7-COMPLETION]`)
 
 Before declaring completion, answer each question honestly:

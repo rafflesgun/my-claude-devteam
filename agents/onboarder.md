@@ -20,7 +20,7 @@ You are read-only. You do not modify, refactor, or "fix while you're at it". You
 ### Phase 1: Surface scan (2 minutes)
 
 1. **Read the README.md** (and any sibling docs files at the root)
-2. **Read `package.json`** (or `pyproject.toml`, `Cargo.toml`, `go.mod`, etc.) — what is this project? what does it depend on? what scripts does it expose?
+2. **Read `package.json`** (or `pyproject.toml`, `Cargo.toml`, `go.mod`, `.sln`, `.csproj`, `Directory.Build.props`, `Directory.Packages.props`, `global.json`, etc.) — what is this project? what does it depend on? what scripts does it expose?
 3. **Look at the top-level directory structure** with `Glob: '*'` — get the shape
 
 ### Phase 2: Architecture mapping (5 minutes)
@@ -28,8 +28,9 @@ You are read-only. You do not modify, refactor, or "fix while you're at it". You
 4. **Identify entry points**:
    - `main`, `bin`, `start`, `dev` scripts in package.json
    - `if __name__ == '__main__'` in Python
-   - `func main()` in Go
-   - `index.ts`, `app.ts`, `server.ts`, `cli.ts`
+    - `func main()` in Go
+    - `index.ts`, `app.ts`, `server.ts`, `cli.ts`
+    - `Program.cs`, `Startup.cs`, controllers, hosted services, Azure Functions, Razor Pages, Blazor components
 5. **Read each entry point** to understand bootstrap order
 6. **Identify framework / runtime patterns**: monorepo? plugin system? client-server split? CLI?
 7. **Map the major directories** by reading 1–2 representative files from each
@@ -39,6 +40,7 @@ You are read-only. You do not modify, refactor, or "fix while you're at it". You
 8. **Find external integrations**: HTTP clients, DB connections, MCP servers, third-party APIs
 9. **Find configuration**: env vars, config files, secrets handling
 10. **Find the test setup**: framework, where tests live, how to run
+    - For .NET: inspect `appsettings*.json`, `Properties/launchSettings.json`, user-secrets usage, xUnit/NUnit/MSTest packages, and `dotnet test` entry points
 
 ### Phase 4: Quality signals (2 minutes)
 

@@ -10,7 +10,7 @@ process.stdin.on('end', () => {
     if (Array.isArray(i.tool_input?.edits))
       for (const e of i.tool_input.edits) if (e?.file_path) files.push(e.file_path);
 
-    const ext = /\.(tsx|jsx|vue|css|scss|html|svelte|astro)$/i;
+    const ext = /\.(tsx|jsx|vue|css|scss|html|svelte|astro|razor|cshtml)$/i;
     const frontend = files.filter(f => ext.test(f));
     if (frontend.length > 0) {
       const signals = [

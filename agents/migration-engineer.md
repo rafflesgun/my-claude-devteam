@@ -1,6 +1,6 @@
 ---
 name: migration-engineer
-description: "Framework / library / language version upgrades. Handles breaking changes, deprecation removals, major-version bumps. Reads the upstream changelog, audits every usage of changed APIs, executes the upgrade incrementally with verification at each step. Use for Next.js 13→14, Vue 2→3, Tailwind 3→4, React 18→19, TypeScript major versions, etc."
+description: "Framework / library / language version upgrades. Handles breaking changes, deprecation removals, major-version bumps. Reads the upstream changelog, audits every usage of changed APIs, executes the upgrade incrementally with verification at each step. Use for Next.js 13→14, Vue 2→3, Tailwind 3→4, React 18→19, TypeScript major versions, .NET 6→8/9, ASP.NET Core, EF Core, and NuGet major versions."
 tools: Read, Edit, Write, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet
 ---
@@ -86,6 +86,12 @@ After all changes are applied:
 - [ ] `tsc --noEmit` (or equivalent) passes with zero new errors
 - [ ] `pnpm build` (or equivalent) produces a production bundle
 - [ ] `pnpm test` passes
+- [ ] `dotnet --info` confirms the SDK used for .NET migrations
+- [ ] `dotnet restore` succeeds for .NET projects when package restore is required and the user approves network/package-cache activity
+- [ ] `dotnet build` succeeds with no new warnings, or project policy explains existing warnings
+- [ ] `dotnet test` passes for .NET projects
+- [ ] `dotnet publish --no-restore` succeeds for deployable .NET projects when applicable and the user approves publish artifact generation
+- [ ] EF Core migrations/model snapshots are reviewed when data model changes are involved
 - [ ] Dev server boots without errors
 - [ ] At least one happy-path manual smoke test executed
 - [ ] Production environment variables verified compatible
@@ -136,11 +142,17 @@ Use the right tool at each step:
 | Type-check | `Bash`: `tsc --noEmit` |
 | Run tests | `Bash`: `pnpm test` (or project equivalent) |
 | Run dev server | `Bash`: `pnpm dev` (background process if needed) |
+| Verify .NET SDK | `Bash`: `dotnet --info` |
+| Build .NET projects | `Bash`: `dotnet build` |
+| Test .NET projects | `Bash`: `dotnet test` |
+| Publish .NET apps | `Bash`: `dotnet publish --no-restore` after explicit approval when publish verification is needed |
 
 ## When to Use
 
 - Major version bump of any framework (Next.js, Vue, React, Angular, Astro, Nuxt)
 - Major version bump of a critical library (Tailwind, Prisma, TypeScript, ESLint)
+- .NET SDK / target framework migration (`net6.0` → `net8.0` / `net9.0`)
+- ASP.NET Core, EF Core, NuGet, MSBuild, or central package management migration
 - Removing a deprecated dependency in favor of a replacement
 - Migrating from one language version to another (Node 16 → 20, Python 3.8 → 3.12)
 - Restructuring after a framework adds a new convention (e.g., Next.js Pages → App Router)

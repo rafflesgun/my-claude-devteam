@@ -2,7 +2,9 @@
 
 **English · [繁體中文](./README.zh-TW.md)**
 
-Fifteen automation hooks that run at Claude Code's lifecycle events (`PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`). They catch common failure modes before they ship: hardcoded secrets, debugger statements, MCP outages, runaway cost, AI-slop UI, stale `console.log`, and more.
+Automation hooks run at Claude Code's lifecycle events (`PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`). They catch common failure modes before they ship: hardcoded secrets, debugger statements, MCP outages, runaway cost, AI-slop UI, stale `console.log`, C# debug leftovers, risky .NET config edits, and more.
+
+The hook suite supports JS/TS projects and C#/.NET projects side by side. Existing JS/TS hooks remain unchanged; .NET behavior lives in dedicated `dotnet-*` hooks so teams can extend coding standards, EF migration policy, and ASP.NET Core security checks without coupling them to frontend tooling.
 
 Each hook is a self-contained script under 75 lines. No external dependencies beyond Node.js and standard Unix tools (`jq`, `git`, `grep`).
 
@@ -123,6 +125,30 @@ Skips the check if `offset` or `limit` is already set.
 
 Use case: search past sessions later (`grep -r "TimeoutError" ~/.claude/sessions/`) to find how you solved a problem the first time.
 
+### 🧩 `dotnet-accumulator.js`
+**Fires:** `PostToolUse` on `Write | Edit`
+**What it does:** Tracks edited .NET files (`.cs`, `.razor`, `.cshtml`, `.csproj`, `.sln`, `.props`, `.targets`, `.editorconfig`, `Directory.Build.*`, `Directory.Packages.props`, etc.) for Stop-time .NET quality checks.
+
+### 🧪 `dotnet-test-runner.js`
+**Fires:** `PostToolUse` on `Write | Edit`
+**What it does:** Best-effort `dotnet test` for related C# test projects. It looks for nearby test projects using xUnit, NUnit, MSTest, or `Microsoft.NET.Test.Sdk`, applies a `FullyQualifiedName~<EditedClass>` filter, and reports failures without blocking.
+
+### 🧱 `dotnet-quality.js`
+**Fires:** `Stop`
+**What it does:** When edited .NET files were accumulated and a project or solution is detected, runs `dotnet format --verify-no-changes --no-restore` and `dotnet build --no-restore`. It never runs `dotnet restore` automatically; if assets are missing, it tells you to restore explicitly.
+
+### ✋ `dotnet-commit-quality.js`
+**Fires:** `PreToolUse` on `Bash` (when command matches `git commit`)
+**What it does:** Blocks high-confidence .NET debug breakpoints and secrets in staged files: `Debugger.Break`, `Debugger.Launch`, connection strings with passwords, Azure Storage account keys, JWT/token signing secrets, and private key material.
+
+### 🔧 `dotnet-config-protection.js`
+**Fires:** `PreToolUse` on `Write | Edit`
+**What it does:** Protects `.editorconfig`, `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `NuGet.config`, rulesets, and related .NET quality/build config. These files should only change when the user explicitly requested .NET build/analyzer/package configuration changes; set `CLAUDE_ALLOW_DOTNET_CONFIG_EDIT=1` for that session to bypass the guard.
+
+### 🧹 `dotnet-debug-check.js`
+**Fires:** `Stop`
+**What it does:** Warns on C# debug leftovers such as `Console.WriteLine`, `Debug.WriteLine`, `Trace.WriteLine`, `Debugger.Break`, and `Debugger.Launch` in modified non-test C# files.
+
 ## Install
 
 ```bash
@@ -184,6 +210,6 @@ These hooks assume `"defaultMode": "bypassPermissions"` — meaning Claude does 
 1. **The human prompt** — the "are you sure?" before each destructive operation
 2. **The human eyes** — the chance to spot a hardcoded secret in a diff before it gets committed
 
-The hooks try to replace both with **deterministic rules**. They will miss things (no heuristic is perfect), but they catch the most common failure modes: `rm -rf`, force-pushes to main, `--no-verify`, committed secrets, committed debuggers, edits to `.env`/`.pem`/credentials, and weakened linter configs.
+The hooks try to replace both with **deterministic rules**. They will miss things (no heuristic is perfect), but they catch the most common failure modes: `rm -rf`, force-pushes to main, `--no-verify`, committed secrets, committed debuggers, edits to `.env`/`.pem`/credentials/production `appsettings`, weakened linter configs, and casual edits to .NET build/analyzer/package policy.
 
 Treat them as a safety net, not a replacement for review.

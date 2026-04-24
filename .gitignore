@@ -15,3 +15,6 @@ node_modules/
 .vscode/
 .idea/
 *.swp
+
+# Local git worktrees
+.worktrees/
