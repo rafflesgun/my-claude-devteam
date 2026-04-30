@@ -2,7 +2,7 @@
 
 **English · [繁體中文](./README.zh-TW.md)**
 
-Twelve specialized agents that replace "one Claude, many prompts" with "one request, a full engineering team".
+Twelve specialized agents that replace "one Claude, many prompts" with "one request, a full engineering team". Claude Code source agents live in this directory; OpenCode-compatible mirrors live in `../.opencode/agents/`.
 
 ## Roster
 
@@ -31,6 +31,8 @@ Twelve specialized agents that replace "one Claude, many prompts" with "one requ
 | [`web-researcher`](./web-researcher.md) | Librarian | sonnet | WebSearch/WebFetch | Turns uncertainty into verified facts with sources. |
 
 > **Note on tools**: agents have the minimum tools they need. Read-only agents (`planner`, `critic`, `vuln-verifier`, `debugger`, `db-expert`, `onboarder`) analyze and produce reports without modifying files. Execution agents (`fullstack-engineer`, `frontend-designer`, `refactor-specialist`, `migration-engineer`, `tool-expert`) have `Edit` / `Write`.
+>
+> **OpenCode note**: OpenCode mirrors use `permission:` instead of Claude Code `tools:` and pin GitHub Copilot models by default: `github-copilot/claude-opus-4.7` for reasoning-heavy agents and `github-copilot/claude-sonnet-4.6` for execution/design/research agents.
 
 ## Delegation Matrix
 
@@ -190,6 +192,26 @@ You are the **Your Agent**...
 
 ## Red Lines
 ...
+```
+
+For OpenCode, create the corresponding mirror at `.opencode/agents/<your-agent>.md`. The file name becomes the OpenCode agent name, and the frontmatter should use OpenCode fields:
+
+```markdown
+---
+description: "One-line description with trigger words."
+mode: subagent
+model: github-copilot/claude-sonnet-4.6
+permission:
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  bash: ask
+  webfetch: allow
+  websearch: allow
+---
+
+You are the **Your Agent**...
 ```
 
 ### Replacing an agent

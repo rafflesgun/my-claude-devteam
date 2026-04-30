@@ -2,10 +2,10 @@
 
 **English · [繁體中文](./README.zh-TW.md)**
 
-> **An entire engineering team for Claude Code**
-> — 12 specialized agents, 15 automation hooks, and the P7/P9/P10 methodology that keeps them disciplined.
+> **An entire engineering team for Claude Code and OpenCode**
+> — 12 specialized agents, 15 automation hooks / plugin checks, and the P7/P9/P10 methodology that keeps them disciplined.
 
-Most people use Claude Code as a single coder. This config turns it into a full engineering org: **planner, fullstack-engineer, refactor-specialist, migration-engineer, frontend-designer, critic, vuln-verifier, debugger, db-expert, onboarder, tool-expert, web-researcher** — each agent owns a role, each has its own tool permissions, and a strict delegation rulebook decides who touches what.
+Most people use Claude Code or OpenCode as a single coder. This config turns it into a full engineering org: **planner, fullstack-engineer, refactor-specialist, migration-engineer, frontend-designer, critic, vuln-verifier, debugger, db-expert, onboarder, tool-expert, web-researcher** — each agent owns a role, each has its own tool permissions, and a strict delegation rulebook decides who touches what.
 
 Backed by **corporate-culture-inspired discipline** (closure, fact-driven, exhaustiveness) and **battle-tested hooks** that catch debugger statements, hardcoded secrets, cost overruns, and MCP outages before they hit main.
 
@@ -28,7 +28,7 @@ Backed by **corporate-culture-inspired discipline** (closure, fact-driven, exhau
 | ⚙️ **Tool Expert** | `tool-expert` | Picks the right MCP tools, chains complex workflows, troubleshoots tool failures. Knows every integration in your stack. | MCP tool failures, complex tool chaining |
 | 📚 **Researcher** | `web-researcher` | Fetches and synthesizes official docs, API specs, error code meanings. The antidote to hallucination. | Uncertain API usage, error code lookups |
 
-Each agent is a markdown file under `agents/` with its own system prompt, tool permissions, and model selection. **Customize them. Fork them. Replace the ones you don't need.**
+Each Claude Code agent is a markdown file under `agents/` with its own system prompt, tool permissions, and model selection. OpenCode mirrors live under `.opencode/agents/` with OpenCode-native `permission` frontmatter and pinned GitHub Copilot models. **Customize them. Fork them. Replace the ones you don't need.**
 
 ---
 
@@ -175,6 +175,21 @@ Most reported "vulnerabilities" are false positives or partially true. The **PoC
 ```
 
 Once installed, all 12 agents and 15 hooks register automatically. Restart Claude Code and your dev team is online.
+
+### OpenCode install
+
+OpenCode support is project-local and lives in `AGENTS.md`, `.opencode/agents/`, `.opencode/plugins/`, `.claude/skills/devteam-methodology/`, and `opencode.example.json`.
+
+To install the OpenCode files into another project:
+
+```bash
+cp -R .opencode /path/to/project/.opencode
+cp -R .claude/skills /path/to/project/.claude/skills
+cp AGENTS.md /path/to/project/AGENTS.md
+cp opencode.example.json /path/to/project/opencode.json
+```
+
+Then use agents with `@planner`, `@fullstack-engineer`, `@critic`, etc. See [`docs/opencode.md`](./docs/opencode.md) for model mapping, skill discovery, plugin-event hook parity, and configuration notes.
 
 ### Optional: install the methodology document
 
