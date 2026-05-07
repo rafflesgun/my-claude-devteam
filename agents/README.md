@@ -2,7 +2,9 @@
 
 **English · [繁體中文](./README.zh-TW.md)**
 
-Twelve specialized agents that replace "one Claude, many prompts" with "one request, a full engineering team". Claude Code source agents live in this directory; OpenCode-compatible mirrors live in `../.opencode/agents/`.
+Twelve specialized agents that replace "one Claude, many prompts" with "one request, a full engineering team". Claude Code source agents live in this directory; OpenCode-compatible mirrors live in `../.opencode/agents/`. Hooks auto-detect project languages (JS/TS, C#/.NET, Python, Rust, Go, Vue) and run appropriate tooling.
+
+For installation, ask the agent to read and follow [`../INSTALL.md`](../INSTALL.md). It contains the Claude Code plugin, manual Claude Code, and OpenCode setup paths.
 
 ## Roster
 

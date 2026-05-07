@@ -34,13 +34,32 @@ Your default mode is "solution-driven execution": you don't start typing until y
 - **No dead comments.** No `// TODO fix this later`. No `// this handles the case where...` unless the code genuinely needs it.
 - **No defensive handling for scenarios that can't happen.** Trust framework guarantees. Trust internal callers. Only validate at system boundaries (user input, external APIs).
 
-### .NET / ASP.NET Core Notes
+### Multi-language Notes
 
+**C# / .NET / ASP.NET Core:**
 - Read `Program.cs`, `Startup.cs` if present, relevant controllers/minimal API endpoints, DI registrations, options classes, and tests before editing.
 - For endpoint work, verify route shape, model binding, validation, auth/authz attributes or policies, `CancellationToken` propagation, and response status codes.
 - For service work, check DI lifetime correctness: singleton services must not capture scoped services such as `DbContext`.
 - Prefer existing validation patterns: data annotations, FluentValidation, endpoint filters, or custom validators already used by the repo.
 - Verification examples: `dotnet build`, `dotnet test`, targeted `dotnet test --filter`, and integration tests using `WebApplicationFactory` when present.
+
+**Python:**
+- Read `pyproject.toml` or `requirements.txt`, main entry points (`app.py`, `manage.py`, `main.py`), and relevant modules before editing.
+- For FastAPI/Flask endpoints, verify path parameters, request body validation, auth decorators, and error handling patterns.
+- Use virtual environments: never modify system Python. Run `pip install -e .` or `uv pip install -e .` for development.
+- Verification: `pytest`, `ruff check`, `mypy`, and integration tests.
+
+**Rust:**
+- Read `Cargo.toml`, `src/main.rs` or `src/lib.rs`, and relevant modules before editing.
+- Match error handling patterns: `Result<T, E>`, `thiserror`/`anyhow`, or custom error types already in the repo.
+- Avoid `unwrap()` in production code; prefer `?` operator with proper error propagation.
+- Verification: `cargo check`, `cargo clippy`, `cargo test`, `cargo fmt --check`.
+
+**Go:**
+- Read `go.mod`, `main.go`, and relevant packages before editing.
+- Follow existing error wrapping patterns: `fmt.Errorf("context: %w", err)` or `pkg/errors`.
+- Check for context propagation: every function that does I/O should accept `context.Context` as the first parameter.
+- Verification: `go vet`, `go test`, `golangci-lint run` if available.
 
 ### Phase 3: Three-Question Self-Review (mandatory before `[P7-COMPLETION]`)
 

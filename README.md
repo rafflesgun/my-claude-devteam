@@ -106,30 +106,27 @@ The team shifts into exhaustive mode when:
 
 ## The Automation (Hooks)
 
-Automation hooks wire up at `pre-commit`, `post-tool-use`, and `stop` events. They catch problems before they ship across JS/TS and C#/.NET projects.
+Automation hooks wire up at `pre-commit`, `post-tool-use`, and `stop` events. They catch problems before they ship — with auto-detection for JS/TS, C#/.NET, Python, Rust, Go, and Vue projects.
 
 | Hook | Trigger | What it catches |
 |------|---------|-----------------|
 | 💰 `cost-tracker.js` | After every response | Token usage + estimated cost per model (Opus / Sonnet / Haiku). Running tally in `~/.claude/stats-cache.json` |
-| ✋ `commit-quality.js` | Pre-commit | Blocks commits with `debugger` statements or hardcoded secrets in JS/TS/Python files |
+| ✋ `commit-quality.js` | Pre-commit | Blocks commits with debugger statements, breakpoints, or hardcoded secrets (multi-language) |
 | 🔧 `mcp-health.js` | MCP tool failures | Detects MCP server outages and suggests restart paths |
-| 🛡 `config-protection.js` | Edit/Write to critical files | Guards important config files from accidental overwrites |
+| 🛡 `config-protection.js` | Edit/Write to critical files | Guards linter/formatter/build config files from accidental overwrites (multi-language) |
 | 🎨 `design-quality.js` | Frontend changes | Checks for AI-slop indicators in UI code |
-| 📝 `check-console.js` | Pre-commit | Flags stray `console.log` in production paths |
+| 📝 `check-console.js` | Stop | Flags debug/log leftovers in modified files (console.log, Console.WriteLine, dbg!, println!, etc.) |
 | 📊 `audit-log.js` | All tool calls | Keeps an audit trail of significant tool operations |
-| 🎯 `batch-format.js` | Multi-file edits | Runs formatter on modified files in batch |
+| 🔍 `quality-check.js` | Multi-file edits | Runs format/lint/build on modified files (Prettier+tsc, dotnet format+build, ruff, cargo fmt+check, go fmt) |
 | 💡 `suggest-compact.js` | Context pressure | Suggests `/compact` when context window fills up |
-| 📈 `accumulator.js` | Session tracking | Accumulates session metrics |
+| 📈 `accumulator.js` | Session tracking | Accumulates edited files per language for batch quality checks |
 | 🚨 `log-error.sh` | Any error | Unified error logging to `~/.claude/error-log.md` |
-| 🧪 `test-runner.js` | After file edit | Finds sibling test file, runs vitest/jest, reports failures (non-blocking) |
-| 🧩 `.NET hooks` | Edit / Stop / Pre-commit | Best-effort `dotnet format`, `dotnet build`, `dotnet test`, C# debug leftover checks, .NET config protection, and staged secret/debugger blocking |
+| 🧪 `test-runner.js` | After file edit | Finds related tests and runs them (vitest/jest, dotnet test, pytest, cargo test, go test) |
 | 🔒 `branch-protection.js` | Pre-Bash | Hard-blocks force pushes and direct commits to main / master / production / release |
 | 📏 `large-file-warner.js` | Pre-Read | Warns at 500 KB, blocks at 2 MB to protect context window |
 | 📚 `session-summary.js` | Stop | Appends session summary to `~/.claude/sessions/` for later search |
 
-Each hook is a self-contained script. Enable / disable / customize in `settings.example.json`.
-
-For .NET repos, the team recognizes `.sln`, `.csproj`, `Program.cs`, `appsettings*.json`, EF Core migrations, Razor, and Blazor. Verification examples include `dotnet restore`, `dotnet build`, `dotnet test`, `dotnet format`, `dotnet publish`, and `dotnet ef migrations script --idempotent`.
+Each hook is a self-contained script. Enable / disable / customize in `settings.example.json`. All language-specific logic lives in `lang-utils.js` — add a new language by extending `LANG_CONFIG`.
 
 ---
 
@@ -174,22 +171,15 @@ Most reported "vulnerabilities" are false positives or partially true. The **PoC
 /plugin install devteam@my-claude-devteam
 ```
 
-Once installed, all 12 agents and 15 hooks register automatically. Restart Claude Code and your dev team is online.
+Once installed, all 12 agents and multi-language hooks register automatically. Restart Claude Code and your dev team is online.
+
+For manual install, OpenCode setup, and agent-readable step-by-step instructions, see [`INSTALL.md`](./INSTALL.md).
 
 ### OpenCode install
 
 OpenCode support is project-local and lives in `AGENTS.md`, `.opencode/agents/`, `.opencode/plugins/`, `.claude/skills/devteam-methodology/`, and `opencode.example.json`.
 
-To install the OpenCode files into another project:
-
-```bash
-cp -R .opencode /path/to/project/.opencode
-cp -R .claude/skills /path/to/project/.claude/skills
-cp AGENTS.md /path/to/project/AGENTS.md
-cp opencode.example.json /path/to/project/opencode.json
-```
-
-Then use agents with `@planner`, `@fullstack-engineer`, `@critic`, etc. See [`docs/opencode.md`](./docs/opencode.md) for model mapping, skill discovery, plugin-event hook parity, and configuration notes.
+See [`INSTALL.md`](./INSTALL.md) for the exact copy commands and [`docs/opencode.md`](./docs/opencode.md) for model mapping, skill discovery, plugin-event hook parity, and configuration notes.
 
 ### Optional: install the methodology document
 
@@ -205,19 +195,7 @@ curl -sL https://raw.githubusercontent.com/NYCU-Chung/my-claude-devteam/main/CLA
 
 ### Manual install (without plugin)
 
-If you prefer not to use the plugin system:
-
-```bash
-git clone https://github.com/NYCU-Chung/my-claude-devteam ~/my-claude-devteam
-
-mv ~/.claude/agents ~/.claude/agents.bak 2>/dev/null
-mv ~/.claude/hooks  ~/.claude/hooks.bak  2>/dev/null
-
-cp -r ~/my-claude-devteam/agents ~/.claude/
-cp -r ~/my-claude-devteam/hooks  ~/.claude/
-cp ~/my-claude-devteam/settings.example.json ~/.claude/settings.json
-# (optional) cp ~/my-claude-devteam/CLAUDE.en.md ~/.claude/CLAUDE.md
-```
+If you prefer not to use the plugin system, follow [`INSTALL.md`](./INSTALL.md).
 
 **Verify the install:**
 

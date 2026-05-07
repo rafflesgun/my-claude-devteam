@@ -2,11 +2,22 @@
 
 **English · [繁體中文](./README.zh-TW.md)**
 
-Automation hooks run at Claude Code's lifecycle events (`PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`). They catch common failure modes before they ship: hardcoded secrets, debugger statements, MCP outages, runaway cost, AI-slop UI, stale `console.log`, C# debug leftovers, risky .NET config edits, and more.
+Automation hooks run at Claude Code's lifecycle events (`PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`). They catch common failure modes before they ship: hardcoded secrets, debugger statements, MCP outages, runaway cost, AI-slop UI, stale debug leftovers, risky config edits, and more.
 
-The hook suite supports JS/TS projects and C#/.NET projects side by side. Existing JS/TS hooks remain unchanged; .NET behavior lives in dedicated `dotnet-*` hooks so teams can extend coding standards, EF migration policy, and ASP.NET Core security checks without coupling them to frontend tooling.
+The hook suite auto-detects your project's language(s) and runs the appropriate tooling — JS/TS, C#/.NET, Python, Rust, Go, Vue — without separate language-specific hooks. Each unified hook handles all supported languages internally.
 
 Each hook is a self-contained script under 75 lines. No external dependencies beyond Node.js and standard Unix tools (`jq`, `git`, `grep`).
+
+## Supported Languages
+
+| Language | Extensions | Quality Check | Test Runner | Debug Detection | Config Protection |
+|----------|-----------|---------------|-------------|-----------------|-------------------|
+| JS/TS | `.ts` `.tsx` `.js` `.jsx` `.mjs` `.cjs` | Prettier + tsc | vitest / jest | `console.log`, `debugger` | ESLint, Prettier, Biome, Stylelint |
+| C#/.NET | `.cs` `.razor` `.cshtml` | dotnet format + build | dotnet test | `Console.WriteLine`, `Debugger.Break` | `.editorconfig`, `Directory.Build.*`, `NuGet.config` |
+| Python | `.py` | ruff check | pytest | `print()`, `pdb.set_trace()`, `breakpoint()` | `pyproject.toml`, `ruff.toml`, `.flake8`, `mypy.ini` |
+| Rust | `.rs` | cargo fmt --check + cargo check | cargo test | `dbg!()`, `println!()` | `Cargo.toml`, `rustfmt.toml`, `clippy.toml` |
+| Go | `.go` | go fmt | go test | `fmt.Println()`, `log.Fatal()` | `go.mod` |
+| Vue | `.vue` | — | — | `console.log` | — |
 
 ## The Hooks
 
@@ -22,8 +33,8 @@ Each hook is a self-contained script under 75 lines. No external dependencies be
 ### ✋ `commit-quality.js`
 **Fires:** `PreToolUse` on `Bash` (when command matches `git commit`)
 **What it does:** Before each commit, runs `git diff --cached` to get staged files, then scans them for:
-- `debugger` statements in JS/TS/Python
-- Hardcoded secrets matching known patterns: `sk-*`, `ghp_*`, `gho_*`, `AKIA*` (AWS), `AIza*` (Google)
+- Language-specific debug/blocker patterns: `debugger` in JS/TS, `Debugger.Break/Launch` in C#, `pdb.set_trace()` and `breakpoint()` in Python
+- Hardcoded secrets matching known patterns: `sk-*`, `ghp_*`, `gho_*`, `AKIA*` (AWS), `AIza*` (Google), `-----BEGIN PRIVATE KEY-----`, connection strings with passwords, Azure Storage account keys, JWT signing secrets
 
 If any are found, the commit is blocked with `exit 2` and the offending file(s) logged to stderr.
 
@@ -39,13 +50,20 @@ State is persisted to `~/.claude/mcp-health-cache.json`. On a successful call af
 
 ### 🛡 `config-protection.js`
 **Fires:** `PreToolUse` on `Write | Edit`
-**What it does:** Blocks direct edits to `.eslintrc*`, `eslint.config.*`, `.prettierrc*`, `prettier.config.*`, `biome.json`, `.ruff.toml`, `.stylelintrc*`. Forces Claude to fix the source code instead of weakening the linter.
+**What it does:** Blocks direct edits to linter, formatter, build, and analyzer config files across all supported languages:
+- JS/TS: `.eslintrc*`, `eslint.config.*`, `.prettierrc*`, `prettier.config.*`, `biome.json`, `.stylelintrc*`
+- C#/.NET: `.editorconfig`, `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `NuGet.config`, `*.ruleset`
+- Python: `pyproject.toml`, `ruff.toml`, `.ruff.toml`, `.flake8`, `mypy.ini`, `tox.ini`
+- Rust: `Cargo.toml`, `rustfmt.toml`, `clippy.toml`
+- Go: `go.mod`
 
-**Customize:** edit the `protectedFiles` set to add your own config files.
+Forces Claude to fix the source code instead of weakening the linter/build config.
+
+**Customize:** set `CLAUDE_ALLOW_CONFIG_EDIT=1` to bypass the guard when you explicitly want config changes.
 
 ### 🎨 `design-quality.js`
 **Fires:** `PostToolUse` on `Write | Edit`
-**What it does:** On frontend file edits (`.tsx`, `.jsx`, `.vue`, `.css`, `.scss`, `.svelte`, `.astro`), scans for generic AI-slop signals:
+**What it does:** On frontend file edits (`.tsx`, `.jsx`, `.vue`, `.css`, `.scss`, `.svelte`, `.astro`, `.razor`, `.cshtml`), scans for generic AI-slop signals:
 - Default CTAs: "Get Started", "Learn More"
 - Uniform card grids (`grid-cols-3` or `grid-cols-4`)
 - Stock gradients (`bg-gradient-to-*`)
@@ -55,9 +73,14 @@ If found, prints a warning (non-blocking) so Claude knows to commit to a more in
 
 ### 📝 `check-console.js`
 **Fires:** `Stop` (after every response)
-**What it does:** Runs `git diff HEAD --name-only` to find files modified this session, then scans them for `console.log` in non-test, non-config files. Prints a warning (non-blocking) if any are found.
+**What it does:** Runs `git diff HEAD --name-only` to find files modified this session, then scans them for language-specific debug/log leftovers:
+- JS/TS: `console.log`
+- C#: `Console.WriteLine`, `Debug.WriteLine`, `Trace.WriteLine`, `Debugger.Break/Launch`
+- Python: `print()`, `pdb.set_trace()`, `breakpoint()`
+- Rust: `dbg!()`, `println!()`, `eprintln!()`
+- Go: `fmt.Println`, `log.Fatal`, `log.Panic`
 
-**Excludes:** `*.test.*`, `*.spec.*`, `*.config.*`, `scripts/`, `__tests__/`
+Prints a warning (non-blocking) if any are found. Excludes test files and build output.
 
 ### 📊 `audit-log.js`
 **Fires:** `PostToolUse` on `Bash`
@@ -65,18 +88,20 @@ If found, prints a warning (non-blocking) so Claude knows to commit to a more in
 
 **Use case:** post-mortem audit of what Claude actually ran during a session.
 
-### 🎯 `batch-format.js`
+### 🔍 `quality-check.js`
 **Fires:** `Stop` (after every response)
-**What it does:** Reads the list of JS/TS files edited this session (accumulated by `accumulator.js`), then runs in batch:
-1. `prettier --write` on all of them (if `./node_modules/.bin/prettier` exists)
-2. `npx tsc --noEmit --pretty false` to catch type errors
-3. Reports TS errors per-file to stderr
+**What it does:** Reads the list of files edited this session (accumulated by `accumulator.js`), auto-detects each file's language, and runs the appropriate quality tooling in batch:
+- **JS/TS:** `prettier --write` (if installed) + `npx tsc --noEmit` for type errors
+- **C#/.NET:** `dotnet format --verify-no-changes --no-restore` + `dotnet build --no-restore`
+- **Python:** `ruff check --select E,F,W` (if ruff is installed)
+- **Rust:** `cargo fmt --check` + `cargo check`
+- **Go:** `go fmt ./...`
 
-Uses a session-scoped temp file (`claude-edited-<session-hash>.txt`) to track which files were edited.
+Never runs restore/install commands automatically — if dependencies are missing, it tells you to restore explicitly.
 
 ### 📈 `accumulator.js`
 **Fires:** `PostToolUse` on `Write | Edit`
-**What it does:** The companion to `batch-format.js`. Every time a JS/TS file is edited, appends the path to the session's temp file. At `Stop`, `batch-format.js` reads the list and runs formatters + typecheck in one batch (faster than running per-file).
+**What it does:** The companion to `quality-check.js`. Every time a file is edited, auto-detects the language and appends the path to a per-language session temp file. At `Stop`, `quality-check.js` reads the lists and runs the appropriate tooling in one batch (faster than running per-file).
 
 ### 💡 `suggest-compact.js`
 **Fires:** `PreToolUse` on `Write | Edit`
@@ -98,7 +123,14 @@ Use this as your personal error journal — fill in solutions after you fix each
 
 ### 🧪 `test-runner.js`
 **Fires:** `PostToolUse` on `Write | Edit`
-**What it does:** Whenever a JS/TS source file is edited, looks for a sibling test file (`foo.test.ts`, `foo.spec.ts`, `__tests__/foo.test.ts`) and runs it via vitest or jest (whichever is in `node_modules/.bin`). Failures are printed to stderr but do not block. Skips if no test runner is installed.
+**What it does:** Whenever a source file is edited, auto-detects the language and runs the appropriate test runner:
+- **JS/TS:** Looks for a sibling test file (`foo.test.ts`, `foo.spec.ts`, `__tests__/foo.test.ts`) and runs it via vitest or jest
+- **C#/.NET:** Finds related test projects (xUnit, NUnit, MSTest) and runs `dotnet test --filter FullyQualifiedName~<EditedClass>`
+- **Python:** Looks for `test_<name>.py` or `<name>_test.py` and runs `pytest -q`
+- **Rust:** Runs `cargo test <edited_module>`
+- **Go:** Runs `go test ./...`
+
+Failures are printed to stderr but do not block. Skips if no test runner is installed.
 
 ### 🔒 `branch-protection.js`
 **Fires:** `PreToolUse` on `Bash`
@@ -125,30 +157,6 @@ Skips the check if `offset` or `limit` is already set.
 
 Use case: search past sessions later (`grep -r "TimeoutError" ~/.claude/sessions/`) to find how you solved a problem the first time.
 
-### 🧩 `dotnet-accumulator.js`
-**Fires:** `PostToolUse` on `Write | Edit`
-**What it does:** Tracks edited .NET files (`.cs`, `.razor`, `.cshtml`, `.csproj`, `.sln`, `.props`, `.targets`, `.editorconfig`, `Directory.Build.*`, `Directory.Packages.props`, etc.) for Stop-time .NET quality checks.
-
-### 🧪 `dotnet-test-runner.js`
-**Fires:** `PostToolUse` on `Write | Edit`
-**What it does:** Best-effort `dotnet test` for related C# test projects. It looks for nearby test projects using xUnit, NUnit, MSTest, or `Microsoft.NET.Test.Sdk`, applies a `FullyQualifiedName~<EditedClass>` filter, and reports failures without blocking.
-
-### 🧱 `dotnet-quality.js`
-**Fires:** `Stop`
-**What it does:** When edited .NET files were accumulated and a project or solution is detected, runs `dotnet format --verify-no-changes --no-restore` and `dotnet build --no-restore`. It never runs `dotnet restore` automatically; if assets are missing, it tells you to restore explicitly.
-
-### ✋ `dotnet-commit-quality.js`
-**Fires:** `PreToolUse` on `Bash` (when command matches `git commit`)
-**What it does:** Blocks high-confidence .NET debug breakpoints and secrets in staged files: `Debugger.Break`, `Debugger.Launch`, connection strings with passwords, Azure Storage account keys, JWT/token signing secrets, and private key material.
-
-### 🔧 `dotnet-config-protection.js`
-**Fires:** `PreToolUse` on `Write | Edit`
-**What it does:** Protects `.editorconfig`, `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `NuGet.config`, rulesets, and related .NET quality/build config. These files should only change when the user explicitly requested .NET build/analyzer/package configuration changes; set `CLAUDE_ALLOW_DOTNET_CONFIG_EDIT=1` for that session to bypass the guard.
-
-### 🧹 `dotnet-debug-check.js`
-**Fires:** `Stop`
-**What it does:** Warns on C# debug leftovers such as `Console.WriteLine`, `Debug.WriteLine`, `Trace.WriteLine`, `Debugger.Break`, and `Debugger.Launch` in modified non-test C# files.
-
 ## Install
 
 ```bash
@@ -173,7 +181,7 @@ Example — disable `cost-tracker`:
   {
     "matcher": "*",
     "hooks": [
-      { "type": "command", "command": "node ~/.claude/hooks/batch-format.js", "timeout": 300 },
+      { "type": "command", "command": "node ~/.claude/hooks/quality-check.js", "timeout": 300 },
       { "type": "command", "command": "node ~/.claude/hooks/check-console.js" }
       // cost-tracker.js removed
     ]
@@ -203,6 +211,13 @@ process.stdin.on('end', () => {
 
 See the [Claude Code hooks docs](https://docs.claude.com/en/docs/claude-code/hooks) for the full event payload schema.
 
+## Adding a new language
+
+All language-specific logic lives in `lang-utils.js`. To add a new language:
+
+1. Add a new entry to `LANG_CONFIG` with the language's file extensions, debug patterns, config files, test configuration, and quality check commands
+2. The existing hooks will automatically pick up the new language — no other files need to change
+
 ## Safety Philosophy
 
 These hooks assume `"defaultMode": "bypassPermissions"` — meaning Claude does not prompt for each tool call. Without the hooks, you would lose two layers of safety:
@@ -210,6 +225,6 @@ These hooks assume `"defaultMode": "bypassPermissions"` — meaning Claude does 
 1. **The human prompt** — the "are you sure?" before each destructive operation
 2. **The human eyes** — the chance to spot a hardcoded secret in a diff before it gets committed
 
-The hooks try to replace both with **deterministic rules**. They will miss things (no heuristic is perfect), but they catch the most common failure modes: `rm -rf`, force-pushes to main, `--no-verify`, committed secrets, committed debuggers, edits to `.env`/`.pem`/credentials/production `appsettings`, weakened linter configs, and casual edits to .NET build/analyzer/package policy.
+The hooks try to replace both with **deterministic rules**. They will miss things (no heuristic is perfect), but they catch the most common failure modes: `rm -rf`, force-pushes to main, `--no-verify`, committed secrets, committed debuggers, edits to `.env`/`.pem`/credentials/production config, weakened linter configs, and casual edits to build/analyzer/package policy across all supported languages.
 
 Treat them as a safety net, not a replacement for review.

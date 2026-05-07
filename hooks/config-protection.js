@@ -1,22 +1,31 @@
-// Block modifications to linter/formatter config files — force fixing source code instead
 const path = require('path');
-let d = ''; process.stdin.on('data', c => d += c);
+const { detectLang, getAllConfigFiles } = require('./lang-utils');
+
+const allProtected = getAllConfigFiles();
+
+let d = '';
+process.stdin.on('data', c => d += c);
 process.stdin.on('end', () => {
   try {
+    if (process.env.CLAUDE_ALLOW_CONFIG_EDIT === '1') {
+      process.stdout.write(d);
+      return;
+    }
     const i = JSON.parse(d);
-    const fp = i.tool_input?.file_path || '';
-    const bn = path.basename(fp);
-    const protectedFiles = new Set([
-      '.eslintrc', '.eslintrc.js', '.eslintrc.cjs', '.eslintrc.json',
-      'eslint.config.js', 'eslint.config.mjs', 'eslint.config.ts',
-      '.prettierrc', '.prettierrc.js', '.prettierrc.json',
-      'prettier.config.js', 'prettier.config.mjs',
-      'biome.json', 'biome.jsonc',
-      '.ruff.toml', 'ruff.toml',
-      '.stylelintrc', '.stylelintrc.json',
-    ]);
-    if (protectedFiles.has(bn)) {
-      process.stderr.write(`[Hook] BLOCKED: Modifying ${bn} is not allowed. Fix the source code instead of weakening linter/formatter config.\n`);
+    const files = [];
+    if (i.tool_input?.file_path) files.push(i.tool_input.file_path);
+    if (i.tool_input?.filePath) files.push(i.tool_input.filePath);
+    if (Array.isArray(i.tool_input?.edits))
+      for (const e of i.tool_input.edits) {
+        if (e?.file_path) files.push(e.file_path);
+        if (e?.filePath) files.push(e.filePath);
+      }
+    const hit = files.find(fp => {
+      const bn = path.basename(fp);
+      return allProtected.has(bn);
+    });
+    if (hit) {
+      process.stderr.write(`[Hook] BLOCKED: Modifying ${path.basename(hit)} is not allowed unless the user explicitly requested config changes. Set CLAUDE_ALLOW_CONFIG_EDIT=1 for that session, or fix source code instead.\n`);
       process.exit(2);
     }
   } catch (e) {}

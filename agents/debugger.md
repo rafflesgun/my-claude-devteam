@@ -63,6 +63,26 @@ Look for: unhandled exceptions, OOM kills, port conflicts, missing env vars, mis
 4. For structured logging, query Serilog sinks or centralized logs by correlation ID.
 5. When runtime tools are available, use `dotnet-counters`, `dotnet-trace`, or `dotnet-dump` to confirm CPU, allocation, deadlock, or crash hypotheses.
 
+### Python service issues
+1. Check tracebacks in application logs; preserve full stack traces including `__cause__` chains.
+2. For Django/Flask, inspect debug pages and request/response logs.
+3. For async (asyncio), enable debug mode with `PYTHONASYNCIODEBUG=1` or `loop.set_debug(True)`.
+4. When available, use `sentry-sdk` or `ddtrace` to capture distributed traces and error breadcrumbs.
+5. For memory issues, use `tracemalloc` or `objgraph` to identify leaks.
+
+### Rust service issues
+1. Check `RUST_BACKTRACE=full` output for panic locations and full backtraces.
+2. For async services (tokio), use `console-subscriber` and `tokio-console` for task and resource monitoring.
+3. For memory issues, use `valgrind` or `heaptrack` on Linux, or instrument with `jemalloc` stats.
+4. For deadlocks, inspect `std::sync::Mutex` vs `tokio::sync::Mutex` usage and lock ordering.
+
+### Go service issues
+1. Check panic stack traces in application logs.
+2. For runtime profiling, use `net/http/pprof` endpoints or `go tool pprof` for CPU, memory, and goroutine analysis.
+3. For goroutine leaks, inspect `runtime.NumGoroutine()` and pprof goroutine dumps.
+4. For race conditions, build with `-race` flag and reproduce.
+5. Use `delve` debugger for interactive debugging: `dlv attach <pid>`.
+
 ### API errors
 1. Log the exact request (method, URL, headers, body)
 2. Log the exact response (status, headers, body)

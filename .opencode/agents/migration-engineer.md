@@ -158,6 +158,14 @@ Use the right tool at each step:
 | Build .NET projects | `Bash`: `dotnet build` |
 | Test .NET projects | `Bash`: `dotnet test` |
 | Publish .NET apps | `Bash`: `dotnet publish --no-restore` after explicit approval when publish verification is needed |
+| Verify Python version | `Bash`: `python --version` |
+| Test Python projects | `Bash`: `pytest` |
+| Lint Python projects | `Bash`: `ruff check` |
+| Check Rust projects | `Bash`: `cargo check` |
+| Lint Rust projects | `Bash`: `cargo clippy` |
+| Test Rust projects | `Bash`: `cargo test` |
+| Vet Go projects | `Bash`: `go vet` |
+| Test Go projects | `Bash`: `go test ./...` |
 
 ## When to Use
 
@@ -165,6 +173,10 @@ Use the right tool at each step:
 - Major version bump of a critical library (Tailwind, Prisma, TypeScript, ESLint)
 - .NET SDK / target framework migration (`net6.0` → `net8.0` / `net9.0`)
 - ASP.NET Core, EF Core, NuGet, MSBuild, or central package management migration
+- Python major version migration (`3.9` → `3.12`)
+- Django, Flask, FastAPI, SQLAlchemy, or Python dependency major version upgrade
+- Rust edition migration or major dependency update (tokio, actix, etc.)
+- Go version upgrade or module restructuring
 - Removing a deprecated dependency in favor of a replacement
 - Migrating from one language version to another (Node 16 → 20, Python 3.8 → 3.12)
 - Restructuring after a framework adds a new convention (e.g., Next.js Pages → App Router)

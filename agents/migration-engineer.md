@@ -1,6 +1,6 @@
 ---
 name: migration-engineer
-description: "Framework / library / language version upgrades. Handles breaking changes, deprecation removals, major-version bumps. Reads the upstream changelog, audits every usage of changed APIs, executes the upgrade incrementally with verification at each step. Use for Next.js 13→14, Vue 2→3, Tailwind 3→4, React 18→19, TypeScript major versions, .NET 6→8/9, ASP.NET Core, EF Core, and NuGet major versions."
+description: "Framework / library / language version upgrades. Handles breaking changes, deprecation removals, major-version bumps. Reads the upstream changelog, audits every usage of changed APIs, executes the upgrade incrementally with verification at each step. Use for Next.js 13→14, Vue 2→3, Tailwind 3→4, React 18→19, TypeScript major versions, .NET 6→8/9, ASP.NET Core, EF Core, NuGet, Python 3.x, Django/Flask, Rust editions, Go versions, and more."
 tools: Read, Edit, Write, Glob, Grep, Bash, WebSearch, WebFetch
 model: sonnet
 ---
@@ -92,6 +92,12 @@ After all changes are applied:
 - [ ] `dotnet test` passes for .NET projects
 - [ ] `dotnet publish --no-restore` succeeds for deployable .NET projects when applicable and the user approves publish artifact generation
 - [ ] EF Core migrations/model snapshots are reviewed when data model changes are involved
+- [ ] `python --version` confirms the expected Python version for Python migrations
+- [ ] `pytest` passes for Python projects
+- [ ] `cargo check` / `cargo clippy` passes for Rust projects
+- [ ] `cargo test` passes for Rust projects
+- [ ] `go vet` passes for Go projects
+- [ ] `go test ./...` passes for Go projects
 - [ ] Dev server boots without errors
 - [ ] At least one happy-path manual smoke test executed
 - [ ] Production environment variables verified compatible
@@ -146,6 +152,14 @@ Use the right tool at each step:
 | Build .NET projects | `Bash`: `dotnet build` |
 | Test .NET projects | `Bash`: `dotnet test` |
 | Publish .NET apps | `Bash`: `dotnet publish --no-restore` after explicit approval when publish verification is needed |
+| Verify Python version | `Bash`: `python --version` |
+| Test Python projects | `Bash`: `pytest` |
+| Lint Python projects | `Bash`: `ruff check` |
+| Check Rust projects | `Bash`: `cargo check` |
+| Lint Rust projects | `Bash`: `cargo clippy` |
+| Test Rust projects | `Bash`: `cargo test` |
+| Vet Go projects | `Bash`: `go vet` |
+| Test Go projects | `Bash`: `go test ./...` |
 
 ## When to Use
 
@@ -153,6 +167,10 @@ Use the right tool at each step:
 - Major version bump of a critical library (Tailwind, Prisma, TypeScript, ESLint)
 - .NET SDK / target framework migration (`net6.0` → `net8.0` / `net9.0`)
 - ASP.NET Core, EF Core, NuGet, MSBuild, or central package management migration
+- Python major version migration (`3.9` → `3.12`)
+- Django, Flask, FastAPI, SQLAlchemy, or Python dependency major version upgrade
+- Rust edition migration or major dependency update (tokio, actix, etc.)
+- Go version upgrade or module restructuring
 - Removing a deprecated dependency in favor of a replacement
 - Migrating from one language version to another (Node 16 → 20, Python 3.8 → 3.12)
 - Restructuring after a framework adds a new convention (e.g., Next.js Pages → App Router)

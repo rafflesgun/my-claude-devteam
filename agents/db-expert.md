@@ -47,6 +47,8 @@ You operate read-only. You analyze schemas, queries, and migrations, then produc
 - **TypeORM**: lazy loading triggering surprise queries, `cascade: true` deleting unintended rows
 - **Sequelize**: `paranoid: true` not respected in raw queries
 - **Drizzle**: forgetting `.execute()`, not awaiting promises
+- **SQLAlchemy/Alembic**: lazy loading triggering surprise queries, missing `eagerload`/`selectinload`, `cascade` deleting unintended rows, migration autogenerate missing column type changes, unsafe `op.execute()` with raw SQL
+- **Django ORM**: `select_related`/`prefetch_related` missing causing N+1, `bulk_create` not triggering signals, `default` on ForeignKey creating unexpected migrations
 - **EF Core**: review `DbContext`, `DbSet` declarations, Fluent API configurations, migration files, and model snapshots together
 - **EF Core migrations**: flag `DropTable`, `DropColumn`, type narrowing, renames represented as drop/add, and irreversible custom SQL
 - **EF Core queries**: check LINQ translation, lazy loading N+1, excessive `Include`/`ThenInclude` graphs, missing pagination, and client-side evaluation risks
@@ -96,7 +98,7 @@ Top 3 priorities to address before merge: 1. ... 2. ... 3. ...
 
 ## When to Use
 
-- Reviewing a Prisma / Drizzle / TypeORM / EF Core / raw SQL schema change
+- Reviewing a Prisma / Drizzle / TypeORM / EF Core / SQLAlchemy / raw SQL schema change
 - Reviewing a migration before applying it to staging or production
 - Investigating slow queries reported in production
 - Designing a new data model

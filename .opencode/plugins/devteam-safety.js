@@ -65,6 +65,29 @@ function hasProjectFile(worktree, relativePath) {
   }
 }
 
+function detectLanguages(worktree) {
+  const detected = []
+  const langDetectors = {
+    "tsconfig.json": "typescript",
+    "go.mod": "go",
+    "pyproject.toml": "python",
+    "Cargo.toml": "rust",
+    "Package.swift": "swift",
+  }
+  for (const [file, lang] of Object.entries(langDetectors)) {
+    if (hasProjectFile(worktree, file)) {
+      detected.push(lang)
+    }
+  }
+  try {
+    const entries = fs.readdirSync(worktree)
+    if (entries.some(f => f.endsWith(".csproj") || f.endsWith(".sln"))) {
+      if (!detected.includes("csharp")) detected.push("csharp")
+    }
+  } catch {}
+  return detected
+}
+
 function resolvePath(worktree, p) {
   if (path.isAbsolute(p)) return p
   return path.join(worktree, p)
@@ -117,20 +140,7 @@ function buildCompactionContext(editedFiles, worktree) {
     contextBlock.push("")
   }
 
-  const detectedLangs = []
-  const langDetectors = {
-    "tsconfig.json": "typescript",
-    "go.mod": "go",
-    "pyproject.toml": "python",
-    "Cargo.toml": "rust",
-    "Package.swift": "swift",
-    "*.csproj": "csharp",
-  }
-  for (const [file, lang] of Object.entries(langDetectors)) {
-    if (hasProjectFile(worktree, file)) {
-      detectedLangs.push(lang)
-    }
-  }
+  const detectedLangs = detectLanguages(worktree)
   if (detectedLangs.length > 0) {
     contextBlock.push(`## Detected Languages: ${detectedLangs.join(", ")}`)
     contextBlock.push("")
@@ -161,19 +171,7 @@ function buildShellEnv(worktree) {
     }
   }
 
-  const langDetectors = {
-    "tsconfig.json": "typescript",
-    "go.mod": "go",
-    "pyproject.toml": "python",
-    "Cargo.toml": "rust",
-    "Package.swift": "swift",
-  }
-  const detected = []
-  for (const [file, lang] of Object.entries(langDetectors)) {
-    if (hasProjectFile(worktree, file)) {
-      detected.push(lang)
-    }
-  }
+  const detected = detectLanguages(worktree)
   if (detected.length > 0) {
     env.DETECTED_LANGUAGES = detected.join(",")
     env.PRIMARY_LANGUAGE = detected[0]
@@ -214,12 +212,11 @@ export const DevteamSafetyPlugin = async ({ client, $, worktree, directory }) =>
 
     const results = []
     results.push(await runIfExists($, worktreePath, "check-console.js"))
-    results.push(await runIfExists($, worktreePath, "dotnet-debug-check.js"))
 
     let totalConsoleLog = 0
     const filesWithConsoleLog = []
     for (const file of files) {
-      if (!file.match(/\.(ts|tsx|js|jsx)$/)) continue
+      if (!file.match(/\.(ts|tsx|js|jsx|py|rs|go|cs|vue)$/)) continue
       try {
         const result = await $`grep -c "console\\.log" ${file} 2>/dev/null`.text()
         const count = parseInt(result.trim(), 10)
@@ -348,7 +345,7 @@ export const DevteamSafetyPlugin = async ({ client, $, worktree, directory }) =>
         return { approved: true, reason: "Read-only operation" }
       }
 
-      if (tool === "bash" && /^(npx )?(prettier|biome|black|gofmt|rustfmt|swift-format)/.test(cmd)) {
+      if (tool === "bash" && /^(npx )?(prettier|biome|black|ruff|gofmt|rustfmt|swift-format)/.test(cmd)) {
         return { approved: true, reason: "Formatter execution" }
       }
 
@@ -382,7 +379,7 @@ export const DevteamSafetyPlugin = async ({ client, $, worktree, directory }) =>
         : event.type === "delete" || event.type === "remove" ? "deleted"
         : "modified"
       if (changeType === "modified" || changeType === "added") {
-        if (event.path.match(/\.(ts|tsx|js|jsx|py|go|rs|cs|java|kt|swift)$/)) {
+        if (event.path.match(/\.(ts|tsx|js|jsx|py|go|rs|cs|java|kt|swift|vue)$/)) {
           editedFiles.add(event.path)
         }
       }

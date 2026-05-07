@@ -1,34 +1,42 @@
-// Pre-commit quality check: block debugger statements and hardcoded secrets in staged files
 const { spawnSync } = require('child_process');
-let d = ''; process.stdin.on('data', c => d += c);
+const { detectLang, getAllCommitBlockers, isGeneratedOrBuildOutput } = require('./lang-utils');
+
+const SECRET_PATTERNS = [
+  /sk-[a-zA-Z0-9]{20,}/,
+  /ghp_[a-zA-Z0-9]{36}/,
+  /gho_[a-zA-Z0-9]{36}/,
+  /AKIA[A-Z0-9]{16}/,
+  /AIza[a-zA-Z0-9_-]{35}/,
+  /-----BEGIN (RSA |EC |OPENSSH |)PRIVATE KEY-----/,
+];
+
+let d = '';
+process.stdin.on('data', c => d += c);
 process.stdin.on('end', () => {
   try {
     const i = JSON.parse(d);
     const cmd = i.tool_input?.command || '';
-    if (!/git commit/.test(cmd) || /--amend/.test(cmd)) { process.stdout.write(d); return; }
+    if (!/git\s+commit\b/.test(cmd) || /--amend/.test(cmd)) { process.stdout.write(d); return; }
 
     const r = spawnSync('git', ['diff', '--cached', '--name-only', '--diff-filter=ACMR'], { encoding: 'utf8' });
-    const files = (r.stdout || '').trim().split('\n').filter(Boolean);
+    const files = (r.stdout || '').trim().split('\n').filter(Boolean).filter(f => !isGeneratedOrBuildOutput(f));
     let blocked = false;
 
     for (const f of files) {
-      if (!/\.(js|jsx|ts|tsx|py)$/.test(f)) continue;
-      const cr = spawnSync('git', ['show', ':' + f], { encoding: 'utf8' });
+      const lang = detectLang(f);
+      if (!lang) continue;
+      const cr = spawnSync('git', ['show', ':' + f], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
       const c = cr.stdout || '';
 
-      if (/\bdebugger\b/.test(c)) {
-        process.stderr.write(`[Hook] ERROR: debugger statement in ${f}\n`);
-        blocked = true;
+      for (const blocker of getAllCommitBlockers()) {
+        if (blocker.lang !== lang) continue;
+        if (blocker.re.test(c)) {
+          process.stderr.write(`[Hook] ERROR: ${blocker.label} in ${f}\n`);
+          blocked = true;
+        }
       }
 
-      const secrets = [
-        /sk-[a-zA-Z0-9]{20,}/,
-        /ghp_[a-zA-Z0-9]{36}/,
-        /gho_[a-zA-Z0-9]{36}/,
-        /AKIA[A-Z0-9]{16}/,
-        /AIza[a-zA-Z0-9_-]{35}/,
-      ];
-      for (const p of secrets) {
+      for (const p of SECRET_PATTERNS) {
         if (p.test(c)) {
           process.stderr.write(`[Hook] ERROR: potential secret in ${f}\n`);
           blocked = true;

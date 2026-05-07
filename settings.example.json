@@ -1,5 +1,5 @@
 {
-  "_comment_top": "Example Claude Code settings wiring JS/TS hooks, dedicated .NET hooks, and generic safety rails. Copy to ~/.claude/settings.json and adjust hook paths if you installed the hooks somewhere other than ~/.claude/hooks/.",
+  "_comment_top": "Example Claude Code settings wiring multi-language hooks (JS/TS, C#, Python, Rust, Go, Vue) and generic safety rails. Copy to ~/.claude/settings.json and adjust hook paths if you installed the hooks somewhere other than ~/.claude/hooks/.",
   "permissions": {
     "defaultMode": "bypassPermissions",
     "_comment": "bypassPermissions = Claude Code will not prompt for each tool call. Use 'prompt' if you prefer to approve each tool call individually. The hooks below provide the safety net when permissions are bypassed."
@@ -32,12 +32,7 @@
           {
             "type": "command",
             "command": "node ~/.claude/hooks/commit-quality.js",
-            "description": "Pre-commit: block debugger statements and secrets in staged files"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/dotnet-commit-quality.js",
-            "description": "Pre-commit: block .NET debug breakpoints and secrets in staged files"
+            "description": "Pre-commit: block debugger statements and secrets in staged files (multi-language)"
           }
         ]
       },
@@ -52,12 +47,7 @@
           {
             "type": "command",
             "command": "node ~/.claude/hooks/config-protection.js",
-            "description": "Block modifications to linter/formatter config files"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/dotnet-config-protection.js",
-            "description": "Block casual modifications to .NET build/analyzer/package config files"
+            "description": "Block modifications to linter/formatter/build config files (multi-language)"
           },
           {
             "type": "command",
@@ -114,12 +104,7 @@
           {
             "type": "command",
             "command": "node ~/.claude/hooks/accumulator.js",
-            "description": "Accumulate edited JS/TS files for batch format at Stop"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/dotnet-accumulator.js",
-            "description": "Accumulate edited .NET files for quality checks at Stop"
+            "description": "Accumulate edited files for quality checks at Stop (multi-language)"
           },
           {
             "type": "command",
@@ -130,14 +115,8 @@
           {
             "type": "command",
             "command": "node ~/.claude/hooks/test-runner.js",
-            "timeout": 60,
-            "description": "Run sibling test files and report failures"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/dotnet-test-runner.js",
             "timeout": 120,
-            "description": "Run related .NET test projects and report failures"
+            "description": "Run related test files and report failures (multi-language)"
           }
         ]
       }
@@ -160,25 +139,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/batch-format.js",
+            "command": "node ~/.claude/hooks/quality-check.js",
             "timeout": 300,
-            "description": "Batch format (Prettier) + typecheck (tsc) all edited JS/TS files"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/dotnet-quality.js",
-            "timeout": 300,
-            "description": "Run .NET format verification and build for edited .NET files"
+            "description": "Run format/lint/build for all edited files (multi-language)"
           },
           {
             "type": "command",
             "command": "node ~/.claude/hooks/check-console.js",
-            "description": "Check for stray console.log in modified files"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/dotnet-debug-check.js",
-            "description": "Check for C# debug/log leftovers in modified files"
+            "description": "Check for debug/log leftovers in modified files (multi-language)"
           },
           {
             "type": "command",
@@ -198,7 +166,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '[Hooks] Session started — active: commit-quality, config-protection, suggest-compact, MCP health, audit-log, design-quality, batch-format, cost-tracker, error-log, test-runner, branch-protection, large-file-warner, session-summary' >&2; exit 0"
+            "command": "echo '[Hooks] Session started — active: commit-quality, config-protection, suggest-compact, MCP health, audit-log, design-quality, quality-check, cost-tracker, error-log, test-runner, branch-protection, large-file-warner, session-summary, check-console' >&2; exit 0"
           }
         ]
       }

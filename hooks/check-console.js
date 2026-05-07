@@ -1,32 +1,39 @@
-// Stop hook: Check for console.log in modified files
 const { spawnSync } = require('child_process');
 const fs = require('fs');
-let d = ''; process.stdin.on('data', c => d += c);
+const { detectLang, getAllDebugPatterns, isGeneratedOrBuildOutput, isTestPath } = require('./lang-utils');
+
+let d = '';
+process.stdin.on('data', c => d += c);
 process.stdin.on('end', () => {
   try {
     const r = spawnSync('git', ['diff', '--name-only', '--diff-filter=ACMR', 'HEAD'], { encoding: 'utf8' });
     if (r.status !== 0) { process.stdout.write(d); return; }
 
-    const excluded = [/\.test\.[jt]sx?$/, /\.spec\.[jt]sx?$/, /\.config\.[jt]s$/, /scripts\//, /__tests__\//];
+    const allPatterns = getAllDebugPatterns();
     const files = r.stdout.trim().split('\n')
-      .filter(f => f && /\.[jt]sx?$/.test(f) && !excluded.some(p => p.test(f)) && fs.existsSync(f));
+      .filter(f => f && !isGeneratedOrBuildOutput(f) && !isTestPath(f) && fs.existsSync(f));
 
-    let found = false;
-    for (const f of files) {
-      const c = fs.readFileSync(f, 'utf8');
-      const lines = c.split('\n');
+    const langMessages = {};
+    for (const file of files) {
+      const lang = detectLang(file);
+      if (!lang) continue;
+      const relevant = allPatterns.filter(p => p.lang === lang);
+      if (relevant.length === 0) continue;
+      const lines = fs.readFileSync(file, 'utf8').split('\n');
       const matches = [];
-      lines.forEach((line, i) => {
-        if (/console\.log\b/.test(line) && !/\/\//.test(line.split('console.log')[0])) {
-          matches.push(i + 1);
-        }
+      lines.forEach((line, idx) => {
+        if (relevant.some(p => p.re.test(line))) matches.push(idx + 1);
       });
       if (matches.length > 0) {
-        process.stderr.write(`[Hook] console.log in ${f} (lines: ${matches.slice(0, 5).join(', ')})\n`);
-        found = true;
+        const label = lang === 'jsts' ? 'console.log' : `${lang} debug/log`;
+        process.stderr.write(`[Hook] ${label} leftover in ${file} (lines: ${matches.slice(0, 5).join(', ')})\n`);
+        langMessages[lang] = true;
       }
     }
-    if (found) process.stderr.write('[Hook] Remove console.log before committing\n');
+    if (Object.keys(langMessages).length > 0) {
+      const langs = Object.keys(langMessages).join(', ');
+      process.stderr.write(`[Hook] Review debug/log leftovers before committing (${langs}).\n`);
+    }
   } catch (e) {}
   process.stdout.write(d);
 });
