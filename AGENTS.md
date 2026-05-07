@@ -43,3 +43,22 @@ The mirrored agents pin GitHub Copilot models by default:
 - Execution/design/research agents use `github-copilot/claude-sonnet-4.6`.
 
 Claude Code hooks from `settings.example.json` do not automatically run in OpenCode. OpenCode hook-equivalent behavior is implemented through `.opencode/plugins/devteam-safety.js`.
+
+## OpenCode Plugin Capabilities
+
+The `devteam-safety` plugin provides these hooks automatically in OpenCode:
+
+| Hook | What It Does |
+|------|-------------|
+| `tool.execute.before` | Blocks dangerous commands, protects sensitive files, blocks large reads |
+| `tool.execute.after` | Tracks edited files, logs bash commands |
+| `session.created` | Detects project context (languages, package manager, CLAUDE.md) |
+| `session.idle` | Runs console.log audit on edited files, cleanup |
+| `session.deleted` | Clears tracking state |
+| `experimental.session.compacting` | Preserves key context across /compact (task status, decisions, edited files) |
+| `permission.ask` | Auto-approves reads, formatters, test runners, git status |
+| `shell.env` | Injects PROJECT_ROOT, PACKAGE_MANAGER, DETECTED_LANGUAGES |
+| `todo.updated` | Logs task completion progress |
+| `file.watcher.updated` | Tracks external file changes for audit |
+
+Session instructions are loaded from `.opencode/instructions/INSTRUCTIONS.md`.
