@@ -36,12 +36,15 @@ function blocksDangerousCommand(command) {
     [/\brm\s+.*(-[a-zA-Z]*r[a-zA-Z]*f|--recursive.*--force|-rf)\b/, "BLOCKED: rm -rf is dangerous"],
     [/--no-verify\b/, "BLOCKED: --no-verify is not allowed. Let git hooks run."],
     [/\bgit\s+push\b.*(-f|--force)\b.*\b(main|master)\b/, "BLOCKED: force pushing to main/master is not allowed"],
-    [/\bgit\s+commit\b.*\b(main|master|production|release)\b/, "BLOCKED: direct protected-branch commit command detected"],
   ]
   for (const [pattern, message] of checks) {
     if (pattern.test(command)) return message
   }
   return null
+}
+
+function isProtectedBranch(branch) {
+  return /^(main|master|production|release|prod)$/.test(branch)
 }
 
 function maybeBlockLargeRead(worktree, filePath) {
@@ -245,6 +248,15 @@ export const DevteamSafetyPlugin = async ({ client, $, worktree, directory }) =>
       if (tool === "bash") {
         const blocked = blocksDangerousCommand(getCommand(args))
         if (blocked) throw new Error(blocked)
+
+        const cmd = getCommand(args)
+        if (/\bgit\s+commit\b/.test(cmd)) {
+          const result = await $`git -C ${worktreePath} branch --show-current`.quiet().nothrow()
+          const branch = result.stdout.toString().trim()
+          if (isProtectedBranch(branch)) {
+            throw new Error("BLOCKED: direct commit on protected branch is not allowed")
+          }
+        }
       }
 
       if (tool === "write") {
